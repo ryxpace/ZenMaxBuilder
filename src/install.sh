@@ -45,7 +45,7 @@ shopt -s progcomp
 shopt -u dirspell progcomp_alias
 
 # Required variables
-repo="https://github.com/grm34/ZenMaxBuilder.git"
+repo="https://github.com/ryxpace/ZenMaxBuilder.git"
 target="${HOME}/ZenMaxBuilder"
 bin="${PREFIX/\/usr}/usr/bin"
 
