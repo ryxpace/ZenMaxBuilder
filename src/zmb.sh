@@ -39,8 +39,7 @@
 # 13. PATCHER.......:  patchs/reverts patches to a kernel      (FUNC)
 # 14. INSTALLER.....:  toolchains install management           (FUNC)
 # 15. UPDATER.......:  updates the script and toolchains       (FUNC)
-# 16. FINDER........:  displays mobile device specifications   (FUNC)
-# 17. HELPER........:  displays zmb help and usage             (FUNC)
+# 16. HELPER........:  displays zmb help and usage             (FUNC)
 # 00. ==>              runs zmb main processus                  (RUN)
 # -------------------------------------------------------------------
 
@@ -176,7 +175,6 @@ _zenmaxbuilder() {
       t)  _get_latest_linux_tag; _exit 0 ;;
       p)  _patch patch; _exit 0 ;;
       r)  _patch revert; _exit 0 ;;
-      i)  _device_specs_option "$@"; _exit 0 ;;
       s)  _clone_anykernel; _start; _exit 0 ;;
       d)  DEBUG="True"; _clone_anykernel; _start; _exit 0 ;;
       :)  _error "$MSG_ERR_MARG ${red}-$OPTARG"; _exit 1 ;;
@@ -617,7 +615,7 @@ _start() {
    # Asks questions to the user and exports settings
   _ask_for_kernel_dir
   _ask_for_defconfig
-  _ask_for_menuconfig 
+  _ask_for_menuconfig
   _get_cross_compile
   _ask_for_edit_makefile
   _ask_for_toolchain
@@ -1351,7 +1349,7 @@ _set_html_status_msg() {
 _send_msg_option() {
   # Usage: _send_msg_option "$@"
   if [[ $TELEGRAM_CHAT_ID ]] && [[ $TELEGRAM_BOT_TOKEN ]]; then
-    _note "$MSG_NOTE_SEND"; local msg; msg="${*/$1}" 
+    _note "$MSG_NOTE_SEND"; local msg; msg="${*/$1}"
     _send_msg "${msg//_/-}"
   else
     _error "$MSG_ERR_API"
@@ -1637,106 +1635,6 @@ _full_upgrade() {
   done
 }
 
-###---------------------------------------------------------------###
-###      16. FINDER => displays mobile device specifications      ###
-###---------------------------------------------------------------###
-
-_find_devices() {
-  # Usage: _find_devices "$@"
-  local key value
-  for key in "$@"; do
-    value="$(grep -o '"'"$key"'":"[^"]*' \
-      "query.json" | grep -o '[^"]*$')"
-    IFS=$'\n' read -d "" -ra "$key" <<< "$value"
-    unset IFS
-  done
-}
-
-_print_devices() {
-  # Usage: _print_devices "index" "name" "brand"
-  echo -e \
-    "${yellow}${1}${nc} => ${green}$2 ${nc}(${blue}${3}${nc})"
-}
-
-_deep_search() {
-  # Usage: _deep_search "key name" "parent" "key"
-  echo "{$1: .data.specifications[] | " \
-       "select(.title == \"$2\").specs[] | " \
-       "select(.key == \"$3\").val[0]}"
-}
-
-_find_device_specs() {
-  local device_specs key value order; echo
-  declare -A device_specs=(
-    [brand]="{brand: .data.brand}"
-    [name]="{name: .data.phone_name}"
-    [date]="{date: .data.release_date}"
-    [dimension]="{dimension: .data.dimension}"
-    [os]="{os: .data.os}"
-    [storage]="{storage: .data.storage}"
-    [screen]="$(_deep_search screen Body Build)"
-    [size]="$(_deep_search size Display Size)"
-    [resolution]="$(_deep_search resolution Display Resolution)"
-    [chipset]="$(_deep_search chipset Platform Chipset)"
-    [cpu]="$(_deep_search cpu Platform CPU)"
-    [gpu]="$(_deep_search gpu Platform GPU)"
-    [ram]="$(_deep_search ram Memory Internal)"
-    [network]="$(_deep_search network Network Technology)"
-    [speed]="$(_deep_search speed Network Speed)"
-    [wlan]="$(_deep_search wlan Comms WLAN)"
-    [bluetooth]="$(_deep_search bluetooth Comms Bluetooth)"
-    [gps]="$(_deep_search gps Comms GPS)"
-    [nfc]="$(_deep_search nfc Comms NFC)"
-    [radio]="$(_deep_search radio Comms Radio)"
-    [usb]="$(_deep_search usb Comms USB)"
-    [battery]="$(_deep_search battery Battery Type)"
-    [sensors]="$(_deep_search sensors Features Sensors)"
-    [models]="$(_deep_search models Misc Models)"
-    [price]="$(_deep_search price Misc Price)"
-    [sim]="$(_deep_search sim Body SIM)"
-  )
-  order=(brand name os chipset cpu gpu storage ram screen size \
-    resolution dimension usb network speed wlan bluetooth gps nfc \
-    radio sim battery sensors models date price)
-  for key in "${order[@]}"; do
-    value="${device_specs[$key]}"
-    value="$(jq -c "$value" device.json)"
-    if [[ -n ${value} ]]; then
-      IFS=":" read -r value value <<< "$value"; unset IFS
-      [[ ${value::-1} != "\"\"" ]] &&
-        echo -e "${green}${key^}${nc}: ${value::-1}"
-    fi
-  done
-}
-
-_device_specs_option() {
-  # Usage: _device_specs_option "device name"
-  _note "$MSG_NOTE_DEVICE_SEARCH"
-  local search; search="${*/$1}"
-  curl -s -L "${PHONE_API}${search// /%20}" -o query.json
-  if grep -sqm 1 "phone_name" query.json; then
-    local device index
-    _find_devices "brand" "phone_name" "detail"; echo
-    # shellcheck disable=SC2154
-    for device in "${!phone_name[@]}"; do
-      _print_devices "$(( device + 1 ))" \
-        "${phone_name[device]}" "${brand[device]}"
-    done
-    _ask_for_device_index "${#phone_name[@]}"
-    _note "$MSG_NOTE_DEVICE_SPECS"
-    index="$(( device_index - 1 ))"
-    # shellcheck disable=SC2154
-    curl -s -L "${detail[index]}" -o device.json
-    if grep -sqm 1 "phone_name" device.json; then
-      _find_device_specs
-    else
-      _error "$MSG_ERR_DEVICE_SPECS ${red}${phone_name[index]}$nc"
-      _exit 1
-    fi
-  else
-    _error "$MSG_ERR_DEVICE_SEARCH ${red}${search/ }$nc"; _exit 1
-  fi
-}
 
 ###---------------------------------------------------------------###
 ###           17. HELPER => displays zmb help and usage           ###
@@ -1774,7 +1672,6 @@ ${nc}[${lyellow}OPTION${nc}] [${lyellow}ARGUMENT${nc}] \
     -v, --version                   $MSG_HELP_V
     -l, --list                      $MSG_HELP_L
     -t, --tag          [v4.19]      $MSG_HELP_T
-    -i, --info        [device]      $MSG_HELP_I
     -m, --msg        [message]      $MSG_HELP_M
     -f, --file          [file]      $MSG_HELP_F
     -z, --zip          [image]      $MSG_HELP_Z
@@ -1796,4 +1693,3 @@ _zenmaxbuilder "$@"
 # THANKS FOR READING !
 # ZMB by darkmaster @grm34
 # -------------------------
-
