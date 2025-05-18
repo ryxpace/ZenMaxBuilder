@@ -523,8 +523,8 @@ _check_user_settings() {
     _error "$MSG_ERR_CONF_KDIR"; _exit 1
   elif ! [[ $COMPILER =~ ^(default|${PROTON_GCC_NAME}|\
       ${PROTON_CLANG_NAME}|${EVA_GCC_NAME}|${HOST_CLANG_NAME}|\
-      ${LOS_GCC_NAME}|${AOSP_CLANG_NAME}|${NEUTRON_GCC_NAME}\
-      ${NEUTRON_CLANG_NAME})$ ]]; then
+      ${LOS_GCC_NAME}|${AOSP_GCC_NAME}|${AOSP_CLANG_NAME}|\
+      ${NEUTRON_GCC_NAME}|${NEUTRON_CLANG_NAME})$ ]]; then
     _error "$MSG_ERR_COMPILER"; _exit 1
   fi
 }
@@ -692,14 +692,26 @@ _start() {
 ###    06. TOOLCHAINER => functions for the toolchains setting    ###
 ###---------------------------------------------------------------###
 
-_aosp_clang_options() {
-  # Usage: _aosp_clang_options "realpath"
+_aosp_gcc_options() {
+  # Usage: _aosp_gcc_options "realpath"
   # Returns: $TC_OPTIONS $PATH $TCVER $lto_dir
-  TC_OPTIONS=("${AOSP_CLANG_OPTIONS[@]}")
+  TC_OPTIONS=("${AOSP_GCC_OPTIONS[@]}")
   _check_linker "${1}/$AOSP_CLANG_CHECK" "${1}/$LLVM_ARM64_CHECK"
   local llvm_path
   llvm_path="${LLVM_ARM64_DIR}/bin:${LLVM_ARM_DIR}/bin"
   export PATH="${AOSP_CLANG_DIR}/bin:${llvm_path}:${PATH}"
+  _check_tc_path "$AOSP_CLANG_DIR"
+  _get_tc_version "$AOSP_CLANG_VERSION"
+  TCVER="$tc_version"
+  lto_dir="$AOSP_CLANG_DIR/lib"
+}
+
+_aosp_clang_options() {
+  # Usage: _aosp_clang_options "realpath"
+  # Returns: $TC_OPTIONS $PATH $TCVER $lto_dir
+  TC_OPTIONS=("${AOSP_CLANG_OPTIONS[@]}")
+  _check_linker "${1}/$AOSP_CLANG_CHECK"
+  export PATH="${AOSP_CLANG_DIR}/bin:${PATH}"
   _check_tc_path "$AOSP_CLANG_DIR"
   _get_tc_version "$AOSP_CLANG_VERSION"
   TCVER="$tc_version"
@@ -830,6 +842,7 @@ _export_path_and_options() {
   case $COMPILER in
     "$NEUTRON_CLANG_NAME") _neutron_clang_options "$tcpath" ;;
     "$PROTON_CLANG_NAME") _proton_clang_options "$tcpath" ;;
+    "$AOSP_GCC_NAME") _aosp_gcc_options "$tcpath" ;;
     "$AOSP_CLANG_NAME") _aosp_clang_options "$tcpath" ;;
     "$EVA_GCC_NAME") _eva_gcc_options "$tcpath" ;;
     "$LOS_GCC_NAME") _los_gcc_options "$tcpath" ;;
@@ -1097,11 +1110,27 @@ _ask_for_save_defconfig() {
 
 _ask_for_toolchain() {
   # Returns: $COMPILER
+  if [[ $DEBUG == True ]]; then
+    echo -e "\n${blue}=== COMPILER DEBUG INFORMATION ===${nc}" >&2
+    echo -e "${blue}Current Settings:${nc}" >&2
+    echo -e "${lyellow}→ COMPILER=$COMPILER${nc}" >&2
+    echo -e "${lyellow}→ AOSP_GCC_NAME=$AOSP_GCC_NAME${nc}" >&2
+    echo -e "${lyellow}→ AOSP_CLANG_NAME=$AOSP_CLANG_NAME${nc}" >&2
+    echo -e "${lyellow}→ EVA_GCC_NAME=$EVA_GCC_NAME${nc}" >&2
+    echo -e "${lyellow}→ PROTON_CLANG_NAME=$PROTON_CLANG_NAME${nc}" >&2
+    echo -e "${lyellow}→ NEUTRON_CLANG_NAME=$NEUTRON_CLANG_NAME${nc}" >&2
+    echo -e "${lyellow}→ LOS_GCC_NAME=$LOS_GCC_NAME${nc}" >&2
+    echo -e "${lyellow}→ PROTON_GCC_NAME=$PROTON_GCC_NAME${nc}" >&2
+    echo -e "${lyellow}→ NEUTRON_GCC_NAME=$NEUTRON_GCC_NAME${nc}" >&2
+    echo -e "${lyellow}→ HOST_CLANG_NAME=$HOST_CLANG_NAME${nc}" >&2
+    echo -e "${blue}===================================${nc}\n" >&2
+  fi
+
   if [[ $COMPILER == default ]]; then
     _prompt "$MSG_SELECT_TC" 2
-    select COMPILER in $AOSP_CLANG_NAME $EVA_GCC_NAME \
-        $PROTON_CLANG_NAME $NEUTRON_CLANG_NAME $LOS_GCC_NAME \
-        $PROTON_GCC_NAME $NEUTRON_GCC_NAME $HOST_CLANG_NAME; do
+    select COMPILER in "$AOSP_GCC_NAME" "$AOSP_CLANG_NAME" "$EVA_GCC_NAME" \
+        "$PROTON_CLANG_NAME" "$NEUTRON_CLANG_NAME" "$LOS_GCC_NAME" \
+        "$PROTON_GCC_NAME" "$NEUTRON_GCC_NAME" "$HOST_CLANG_NAME"; do
       [[ $COMPILER ]] && break
       _error "$MSG_ERR_SELECT"
     done
@@ -1512,14 +1541,20 @@ _install_aosp_tgz() {
 }
 
 _clone_toolchains() {
-  case $COMPILER in # aosp-clang
-    "$AOSP_CLANG_NAME")
+  case $COMPILER in # aosp-clang-gcc
+    "$AOSP_GCC_NAME")
       _clone_tc "$AOSP_CLANG_VERSION" "$AOSP_CLANG_URL" \
                 "$AOSP_CLANG_DIR"
       _clone_tc "$LLVM_ARM64_VERSION" "$LLVM_ARM64_URL" \
                 "$LLVM_ARM64_DIR"
       _clone_tc "$LLVM_ARM_VERSION" "$LLVM_ARM_URL" \
                 "$LLVM_ARM_DIR"
+      ;;
+  esac
+  case $COMPILER in # aosp-clang
+    "$AOSP_CLANG_NAME")
+      _clone_tc "$AOSP_CLANG_VERSION" "$AOSP_CLANG_URL" \
+                "$AOSP_CLANG_DIR"
       ;;
   esac
   case $COMPILER in # neutron-clang or neutron-gcc
