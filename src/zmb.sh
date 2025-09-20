@@ -404,7 +404,7 @@ _get_latest_aosp_tag() {
   local url regex rep
   case ${2##*/} in
     "${AOSP_CLANG_DIR##*/}")
-      regex="clang-r\d+[a-z]{1}"; rep="${1/+/+archive}"
+      regex="clang-r\d+[a-z]*"; rep="${1/+/+archive}"
       ;;
     "${LLVM_ARM64_DIR##*/}"|"${LLVM_ARM_DIR##*/}")
       regex="llvm-r\d+[a-z]{0,1}"
