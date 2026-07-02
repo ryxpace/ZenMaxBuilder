@@ -150,7 +150,7 @@ The installer simply clones the repository in your `HOME` and creates a copy of 
 
 Install ZenMaxBuilder :
 
-    wget kernel-builder.com/zmb && bash zmb install
+    wget https://ryxpace.github.io/ZenMaxBuilder/zmb && bash zmb install
 
 Checking the installation :
 

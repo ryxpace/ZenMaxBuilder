@@ -22,21 +22,21 @@
 <br>
 ## Table of Contents
 
-- [Overview](https://kernel-builder.com#overview)
-- [Requirements](https://kernel-builder.com#requirements)
-- [Installation](https://kernel-builder.com#installation)
-- [Getting Started](https://kernel-builder.com#getting-started)
-- [Options](https://kernel-builder.com#options)
-- [Working Structure](https://kernel-builder.com#working-structure)
-- [Toolchains](https://kernel-builder.com#toolchains)
-- [Screenshots](https://kernel-builder.com#screenshots)
-- [More information](https://kernel-builder.com#more-information)
-- [Common warnings and errors](https://kernel-builder.com#common-warnings-and-errors)
-- [Reporting Issues](https://kernel-builder.com#reporting-issues)
-- [Contributing](https://kernel-builder.com#contributing)
-- [Help us Translate ZenMaxBuilder](https://kernel-builder.com#help-us-translate-zenmaxbuilder)
-- [License](https://kernel-builder.com#license)
-- [Credits](https://kernel-builder.com#credits)
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Options](#options)
+- [Working Structure](#working-structure)
+- [Toolchains](#toolchains)
+- [Screenshots](#screenshots)
+- [More information](#more-information)
+- [Common warnings and errors](#common-warnings-and-errors)
+- [Reporting Issues](#reporting-issues)
+- [Contributing](#contributing)
+- [Help us Translate ZenMaxBuilder](#help-us-translate-zenmaxbuilder)
+- [License](#license)
+- [Credits](#credits)
 
 <br>
 ## Overview
@@ -66,7 +66,7 @@ The installer simply clones the repository in your `HOME` and creates a copy of 
 
 Install ZenMaxBuilder :
 
-    wget kernel-builder.com/zmb && bash zmb install
+    wget https://ryxpace.github.io/ZenMaxBuilder/zmb && bash zmb install
 
 Checking the installation :
 
