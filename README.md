@@ -180,7 +180,7 @@ You can exit ZMB at any time using `ctrl+c` or `ctrl+z` combinaison keys.
 
 ## Options
 
-    Usage: zmb [OPTION] [ARGUMENT] (e.g. zmb --info zenfone pro)
+    Usage: zmb [OPTION] [ARGUMENT]
 
     Options
         -h, --help                      show this message and exit
@@ -189,7 +189,6 @@ You can exit ZMB at any time using `ctrl+c` or `ctrl+z` combinaison keys.
         -v, --version                   show toolchains versions
         -l, --list                      show list of your kernels
         -t, --tag          [v4.19]      show the latest Linux tag
-        -i, --info        [device]      mobile device specifications
         -m, --msg        [message]      send message on Telegram
         -f, --file          [file]      send file on Telegram
         -z, --zip          [image]      create new kernel zip

@@ -155,7 +155,6 @@ _zenmaxbuilder() {
       "--tag")     set -- "$@" "-t" ;;
       "--patch")   set -- "$@" "-p"; break ;;
       "--revert")  set -- "$@" "-r"; break ;;
-      "--info")    set -- "$@" "-i" ;;
       "--debug")   set -- "$@" "-d"; break ;;
       *)           set -- "$@" "$option" ;;
     esac
@@ -163,7 +162,7 @@ _zenmaxbuilder() {
   if [[ $# -eq 0 ]] || [[ $* == "--" ]]; then
     _error "$MSG_ERR_EOPT"; _exit 1
   fi
-  while getopts ':hsuvldprt:m:i:f:z:' zmb_option; do
+  while getopts ':hsuvldprt:m:f:z:' zmb_option; do
     case $zmb_option in
       h)  clear; _terminal_banner; _usage; _exit 0 ;;
       u)  _full_upgrade; _exit 0 ;;
@@ -1279,19 +1278,6 @@ _ask_for_update_aosp() {
   [[ $confirm =~ (y|Y|yes|Yes|YES) ]] && update_aosp="True"
 }
 
-_ask_for_device_index() {
-  # Usage: _ask_for_device_index "number of devices found"
-  # Checks for a valid index (matching the number of devices)
-  # Returns: $device_index
-  _prompt "$MSG_ASK_DEVICE_INDEX" 1; read -r device_index
-  until (( 1<=device_index && device_index<=$1 )); do
-    _error "$MSG_ERR_DEVICE_INDEX ${red}${device_index}"\
-           "${yellow}($MSG_ERR_TOTAL $1)"
-    _prompt "$MSG_ASK_DEVICE_INDEX" 1
-    read -r device_index
-  done
-}
-
 
 ###---------------------------------------------------------------###
 ###          10. TELEGRAMER => kernel building feedback           ###
@@ -1754,8 +1740,7 @@ ZenMaxBuilder (ZMB) Kernel Builder by @darkmaster Neternels Team
 _usage() {
   echo -e "
 ${bold}Usage:$nc ${green}zmb \
-${nc}[${lyellow}OPTION${nc}] [${lyellow}ARGUMENT${nc}] \
-(e.g. ${magenta}zmb --info zenfone pro${nc})
+${nc}[${lyellow}OPTION${nc}] [${lyellow}ARGUMENT${nc}]
 
   ${bold}Options$nc
     -h, --help                      $MSG_HELP_H
