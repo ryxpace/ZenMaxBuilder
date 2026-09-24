@@ -3,9 +3,10 @@
 set -u
 shopt -s progcomp checkwinsize
 
-required=(bash tput whoami sed grep find wget git curl zip tar
+required=(bash tput whoami sed grep find wget git curl zip tar xz
   jq expect make cmake automake autoconf llvm-ar lld lldb clang
-  gcc ld bison perl gperf gawk flex bc python3 zstd openssl)
+  gcc ld bison perl gperf gawk flex bc python3 zstd openssl
+  sha256sum)
 
 echo "PATH -> ${PATH}"
 for x in "${required[@]}"; do

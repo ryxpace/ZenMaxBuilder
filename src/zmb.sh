@@ -1522,6 +1522,10 @@ _clone_tc() {
           _get_latest_aosp_tag "$2" "$3"
           _install_aosp_tgz "$3" "$1"
           ;;
+        "$EVA_GCC_URL")
+          _get_latest_eva_tag
+          _install_eva_tgz "$3" "$1"
+          ;;
         *)
           _command unbuffer git clone --depth=1 -b "$1" "$2" "$3"
           ;;
@@ -1538,6 +1542,25 @@ _install_aosp_tgz() {
   _command unbuffer tar -xvf "${1##*/}.tar.gz" -C "$1"
   [[ ! -f ${DIR}/toolchains/$2 ]] &&
     echo "$latest" > "${DIR}/toolchains/$2"
+}
+
+_get_latest_eva_tag() {
+  # Fetches latest release tag from gcc-build
+  # Returns: $eva_tag (set to $EVA_GCC_TAG if not "latest")
+  eva_tag="$EVA_GCC_TAG"
+  [[ $eva_tag != latest ]] && return
+  eva_tag="$(curl -s https://api.github.com/repos/mvaisakh/gcc-build/releases/latest \
+    | jq -r .tag_name)"
+}
+
+_install_eva_tgz() {
+  # Usage: _install_eva_tgz "path" "arch" (arm64|arm)
+  local url="${EVA_GCC_URL}/releases/download/${eva_tag}/eva-gcc-${2}-${eva_tag}.xz"
+  _command mkdir -p "$1"
+  _command unbuffer wget -O "${1##*/}.xz" "$url"
+  _note "$MSG_NOTE_TAR_AOSP ${1##*/}.xz > toolchains/${1##*/}"
+  _command tar -xJf "${1##*/}.xz" -C "$1"
+  rm -f "${1##*/}.xz"
 }
 
 _clone_toolchains() {
@@ -1559,7 +1582,19 @@ _clone_toolchains() {
   esac
   case $COMPILER in # neutron-clang or neutron-gcc
     "$NEUTRON_CLANG_NAME"|"$NEUTRON_GCC_NAME")
-      _clone_tc "$NEUTRON_BRANCH" "$NEUTRON_URL" "$NEUTRON_DIR"
+      if ! [[ -d $NEUTRON_DIR ]]; then
+        _ask_for_clone_toolchain "${NEUTRON_DIR##*/}"
+        if [[ $clone_tc == True ]]; then
+          _command mkdir -p "$NEUTRON_DIR"
+          _cd "$NEUTRON_DIR" \
+            "$MSG_ERR_DIR ${red}${NEUTRON_DIR}"
+          _command curl -fsSL -o antman \
+            "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          _command chmod +x antman
+          _command ./antman -S --noconfirm
+          _cd "$DIR" "$MSG_ERR_DIR ${red}$DIR"
+        fi
+      fi
       ;;
   esac
   case $COMPILER in # proton-Clang or proton-gcc
@@ -1569,9 +1604,8 @@ _clone_toolchains() {
   esac
   case $COMPILER in # eva-gcc or proton-gcc or neutron-gcc
     "$EVA_GCC_NAME"|"$PROTON_GCC_NAME"|"$NEUTRON_GCC_NAME")
-      _clone_tc "$EVA_ARM_BRANCH" "$EVA_ARM_URL" "$EVA_ARM_DIR"
-      _clone_tc "$EVA_ARM64_BRANCH" "$EVA_ARM64_URL" \
-                "$EVA_ARM64_DIR"
+      _clone_tc "arm" "$EVA_GCC_URL" "$EVA_ARM_DIR"
+      _clone_tc "arm64" "$EVA_GCC_URL" "$EVA_ARM64_DIR"
       ;;
   esac
   case $COMPILER in # lineage-gcc
@@ -1629,9 +1663,9 @@ _full_upgrade() {
     [zmb]="${DIR}€${ZMB_BRANCH}€$MSG_UP_ZMB"
     [ak3]="${ANYKERNEL_DIR}€${ANYKERNEL_BRANCH}"
     [t1]="${tp}/${PROTON_DIR}€${PROTON_BRANCH}"
-    [t2]="${tp}/${NEUTRON_DIR}€${NEUTRON_BRANCH}"
-    [t3]="${tp}/${EVA_ARM64_DIR}€${EVA_ARM64_BRANCH}"
-    [t4]="${tp}/${EVA_ARM_DIR}€${EVA_ARM_BRANCH}"
+    [t2]="${tp}/${NEUTRON_DIR}"
+    [t3]="${tp}/${EVA_ARM64_DIR}"
+    [t4]="${tp}/${EVA_ARM_DIR}"
     [t5]="${tp}/${LOS_ARM64_DIR}€${LOS_ARM64_BRANCH}"
     [t6]="${tp}/${LOS_ARM_DIR}€${LOS_ARM_BRANCH}"
     [t7]="${tp}/${AOSP_CLANG_DIR}€${AOSP_CLANG_URL}€$AOSP_CLANG_VERSION"
@@ -1647,6 +1681,18 @@ _full_upgrade() {
     if [[ -d ${repo[0]} ]]; then
       _note "$MSG_UPDATE ${repo[0]##*/}..."
       case $repository in
+        t2)
+          _cd "${repo[0]}" "$MSG_ERR_DIR ${red}${repo[0]}"
+          [[ -f antman ]] && \
+            _command ./antman -U --noconfirm
+          _cd "$DIR" "$MSG_ERR_DIR ${red}$DIR"
+          ;;
+        t3)
+          _get_latest_eva_tag
+          _command rm -rf "${tp}/${EVA_ARM64_DIR}" "${tp}/${EVA_ARM_DIR}"
+          _install_eva_tgz "${tp}/${EVA_ARM64_DIR}" "arm64"
+          _install_eva_tgz "${tp}/${EVA_ARM_DIR}" "arm" ;;
+        t4) ;;
         t7|t8|t9)
           _get_local_aosp_tag "${repo[0]}" "${repo[2]}"
           _get_latest_aosp_tag "${repo[1]}" "${repo[0]}"
