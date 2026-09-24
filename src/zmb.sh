@@ -615,6 +615,7 @@ _start() {
    # Asks questions to the user and exports settings
   _ask_for_kernel_dir
   _ask_for_defconfig
+  _detect_lto
   _ask_for_menuconfig
   _get_cross_compile
   _ask_for_edit_makefile
@@ -631,6 +632,10 @@ _start() {
   [[ -z $LINUX_VERSION ]] &&
     (_error "$MSG_ERR_LINUXVER"; _exit 1)
   KERNEL_NAME="${TAG}-${CODENAME}-$LINUX_VERSION"
+  grep -q "^CONFIG_LTO=y" \
+    "${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}" \
+    && KERNEL_NAME+="-lto"
+  [[ $DEBUG == True ]] && KERNEL_NAME+="-debug"
 
   # Makes clean
   _ask_for_make_clean
@@ -1057,6 +1062,12 @@ _ask_for_kernel_dir() {
     KERNEL_DIR="$(realpath "$KERNEL_DIR")"
     _cd "$DIR" "$MSG_ERR_DIR ${red}$DIR"
   fi
+}
+
+_detect_lto() {
+  local conf="${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}"
+  grep -q "^CONFIG_.*LTO=y" "$conf" \
+    && LTO="True" || LTO=""
 }
 
 _ask_for_defconfig() {
