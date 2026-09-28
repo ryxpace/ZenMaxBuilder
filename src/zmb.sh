@@ -107,6 +107,7 @@ elif ! source "${DIR}/etc/settings.cfg" 2>/dev/null; then
   echo "ERROR: ZenMaxBuilder settings cannot be found" >&2
   exit 2
 fi
+[[ -z $CCACHE ]] && CCACHE="False"
 
 # User language
 # shellcheck source=/dev/null
@@ -156,6 +157,7 @@ _zenmaxbuilder() {
       "--patch")   set -- "$@" "-p"; break ;;
       "--revert")  set -- "$@" "-r"; break ;;
       "--debug")   set -- "$@" "-d"; break ;;
+      "--no-ccache") CCACHE="False" ;;
       *)           set -- "$@" "$option" ;;
     esac
   done
@@ -556,6 +558,26 @@ _check_tc_path() {
   done
 }
 
+_remove_ccache_from_makefile() {
+  local makefile="${KERNEL_DIR}/Makefile"
+  [[ ${CCACHE:-False} == True ]] && return 0
+  _command sed -ri \
+    -e 's#^([[:space:]]*(CROSS_COMPILE|CC)[[:space:]]*[?:+]?=[[:space:]]*)ccache[[:space:]]+([^[:space:]].*)$#\1\3#' \
+    -e 's#^([[:space:]]*(CROSS_COMPILE|CC)[[:space:]]*[?:+]?=)[[:space:]]*ccache[[:space:]]*$#\1#' \
+    "$makefile"
+}
+
+_inject_ccache() {
+  # Prepends ccache to CC in TC_OPTIONS if enabled
+  # Returns: $TC_OPTIONS[3] (mutated)
+  if [[ $CCACHE == True ]]; then
+    command -v ccache &>/dev/null \
+      || { _error "$MSG_ERR_CCACHE"; _exit 1; }
+    TC_OPTIONS[3]="CC=ccache ${TC_OPTIONS[3]#CC=}"
+  fi
+  _remove_ccache_from_makefile
+}
+
 _check_makefile() {
   # Checks CROSS_COMPILE and CC
   # > warns the user while they not seems correctly set
@@ -854,6 +876,7 @@ _export_path_and_options() {
     "$PROTON_GCC_NAME") _proton_gcc_options "$tcpath" ;;
     "$HOST_CLANG_NAME") _host_clang_options ;;
   esac
+  _inject_ccache
   _check_makefile
   if [[ $LTO == True ]]; then
     export LD_LIBRARY_PATH="$lto_dir"
@@ -1755,6 +1778,7 @@ ${nc}[${lyellow}OPTION${nc}] [${lyellow}ARGUMENT${nc}]
     -p, --patch                     $MSG_HELP_P
     -r, --revert                    $MSG_HELP_R
     -d, --debug                     $MSG_HELP_D
+    --no-ccache                     $MSG_HELP_NO_CCACHE
 
 ${bold}$MSG_HELP_INFO \
 ${cyan}https://ryxpace.github.io/ZenMaxBuilder$nc\n"
